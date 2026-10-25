@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from itertools import count
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 APP_VERSION = "0.1.0"
@@ -23,6 +23,17 @@ class Task(BaseModel):
 
 tasks: dict[int, Task] = {}
 task_ids = count(1)
+
+def find_task(task_id: int) -> Task:
+    task = tasks.get(task_id)
+
+    if task is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Задача не найдена",
+        )
+
+    return task
 
 @app.get("/health")
 def health() -> dict[str, str]:
@@ -47,3 +58,14 @@ def create_task(task_data: TaskCreate) -> Task:
 @app.get("/tasks", response_model=list[Task])
 def list_tasks() -> list[Task]:
     return list(tasks.values())
+
+@app.get("/tasks/{task_id}", response_model=Task)
+def get_task(task_id: int) -> Task:
+    return find_task(task_id)
+
+@app.patch("/tasks/{task_id}/complete", response_model=Task)
+def complete_task(task_id: int) -> Task:
+    task = find_task(task_id)
+    task.done = True
+
+    return task
