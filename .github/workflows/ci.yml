@@ -36,5 +36,6 @@ jobs:
             .env.example
             .gitignore
             .github/workflows/ci.yml
+            README.md
           include-hidden-files: true
           if-no-files-found: error
