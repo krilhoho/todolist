@@ -1,15 +1,35 @@
-from fastapi import FastAPI
+import logging
+import os
+from contextlib import asynccontextmanager
 from itertools import count
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
-APP_VERSION = "0.1.0"
+
+APP_NAME = os.getenv("APP_NAME", "To-Do List")
+APP_VERSION = os.getenv("APP_VERSION", "0.1.0")
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+)
+
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info("Starting %s, version %s", APP_NAME, APP_VERSION)
+    yield
+    logger.info("Stopping %s", APP_NAME)
+
 
 app = FastAPI(
-    title="to-do list",
-    description="Cервис для учёта задач",
+    title=APP_NAME,
+    description="Сервис для учёта задач",
     version=APP_VERSION,
+    lifespan=lifespan,
 )
 
 class TaskCreate(BaseModel):
@@ -52,6 +72,7 @@ def create_task(task_data: TaskCreate) -> Task:
     )
 
     tasks[task.id] = task
+    logger.info("Task created: id=%s", task.id)
 
     return task
 
@@ -67,5 +88,6 @@ def get_task(task_id: int) -> Task:
 def complete_task(task_id: int) -> Task:
     task = find_task(task_id)
     task.done = True
+    logger.info("Task completed: id=%s", task.id)
 
     return task
